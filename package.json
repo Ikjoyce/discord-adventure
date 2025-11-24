@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/bot.js",
-    "dev": "ts-node src/bot.ts"
+    "dev": "ts-node src/bot.ts",
+    "deploy": "ts-node src/deploy-commands.ts"
   },
   "engines": {
     "node": ">=18.x"

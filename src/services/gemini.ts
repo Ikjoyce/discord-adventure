@@ -44,9 +44,13 @@ export async function generateNarrative(context: NarrativeContext): Promise<stri
   if (roll.isCriticalSuccess) outcomeHint = 'CRITICAL SUCCESS! THE BEST POSSIBLE RESULT.';
   if (roll.isCriticalFailure) outcomeHint = 'CRITICAL FAILURE! A CATASTROPHIC MISHAP.';
 
+  const historyText = context.history && context.history.length > 0 
+    ? `\nRecent Session History:\n${context.history.join('\n')}\n` 
+    : '';
+
   const prompt = `
     You are the Dungeon Master for a Dungeons & Dragons 5e game.
-    
+    ${historyText}
     Player: ${player.characterName}
     Stats: STR:${player.stats.str} DEX:${player.stats.dex} CON:${player.stats.con} INT:${player.stats.int} WIS:${player.stats.wis} CHA:${player.stats.cha}
     

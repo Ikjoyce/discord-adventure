@@ -1,6 +1,7 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js';
+import { Client, GatewayIntentBits, Events, Interaction } from 'discord.js';
 import dotenv from 'dotenv';
 import { handleRollCommand, handleStatsCommand, handleSetStatCommand } from './commands/rollHandler';
+import { handleAdminCommand } from './commands/adminHandler';
 import { loadPlayers } from './data/playerManager';
 import { initGemini } from './services/gemini';
 
@@ -14,8 +15,6 @@ const client = new Client({
     GatewayIntentBits.DirectMessages
   ]
 });
-
-const PREFIX = '!';
 
 client.once(Events.ClientReady, c => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
@@ -32,42 +31,36 @@ client.once(Events.ClientReady, c => {
   }
 });
 
-client.on(Events.MessageCreate, async message => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith(PREFIX)) return;
+client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
-  const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-  const command = args.shift()?.toLowerCase();
+  const command = interaction.commandName;
 
   try {
     switch (command) {
       case 'roll':
-      case 'r':
-      case 'action':
-        await handleRollCommand(message, args);
+        await handleRollCommand(interaction);
         break;
         
       case 'stats':
-      case 'sheet':
-        await handleStatsCommand(message);
+        await handleStatsCommand(interaction);
         break;
         
       case 'setstat':
-        await handleSetStatCommand(message, args);
+        await handleSetStatCommand(interaction);
         break;
-        
-      case 'help':
-        await message.reply(`
-**Discord Adventure Bot Commands**
-\`!roll <action>\` - Attempt an action (e.g., "!roll I attack the goblin")
-\`!stats\` - View your character stats
-\`!setstat <stat> <value>\` - Set a stat (e.g., "!setstat str 16")
-        `);
+
+      case 'admin':
+        await handleAdminCommand(interaction);
         break;
     }
   } catch (error) {
     console.error('Command execution error:', error);
-    await message.reply('An error occurred while executing that command.');
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+    } else {
+      await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    }
   }
 });
 
