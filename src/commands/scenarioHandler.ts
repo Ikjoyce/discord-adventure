@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { generateScenario } from '../services/gemini';
 import { createScenario, getScenario, endScenario, addScenarioMessage } from '../state/scenarioManager';
 
@@ -122,13 +122,16 @@ async function handleEndScenario(interaction: ChatInputCommandInteraction, chann
                 const message = await channel.messages.fetch(messageId);
                 if (message) {
                     const disabledRows = message.components.map(row => {
-                        const newRow = ActionRowBuilder.from(row);
-                        newRow.components.forEach((component: any) => {
-                             component.setDisabled(true);
+                        const newRow = new ActionRowBuilder<ButtonBuilder>();
+                        row.components.forEach(component => {
+                            if (component.type === ComponentType.Button) {
+                                const button = ButtonBuilder.from(component);
+                                button.setDisabled(true);
+                                newRow.addComponents(button);
+                            }
                         });
                         return newRow;
                     });
-                    // @ts-ignore
                     await message.edit({ components: disabledRows });
                 }
             } catch (e) {
