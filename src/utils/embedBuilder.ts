@@ -13,6 +13,18 @@ export interface RollEmbedOptions {
   disadvantage?: boolean;
 }
 
+const CRITICAL_SUCCESS_GIFS = [
+  'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif',
+  'https://media.giphy.com/media/g9582DNuQppxC/giphy.gif',
+  'https://media.giphy.com/media/6nuiJjOOQBBn2/giphy.gif',
+];
+
+const CRITICAL_FAILURE_GIFS = [
+  'https://media.giphy.com/media/3o7TKCakQO17ILeXkY/giphy.gif',
+  'https://media.giphy.com/media/3oEjHCWdU7F4hkcudy/giphy.gif',
+  'https://media.giphy.com/media/26ufq9mryvc5HI27m/giphy.gif',
+];
+
 const COLORS = {
   SUCCESS: '#57F287',
   FAILURE: '#ED4245',
@@ -75,6 +87,15 @@ export function createRollEmbed(options: RollEmbedOptions): EmbedBuilder {
     )
     .setFooter({ text: 'Discord Adventure Bot' })
     .setTimestamp();
+
+  // Add GIF for critical rolls
+  if (rollResult.isCriticalSuccess) {
+    const randomGif = CRITICAL_SUCCESS_GIFS[Math.floor(Math.random() * CRITICAL_SUCCESS_GIFS.length)];
+    embed.setImage(randomGif);
+  } else if (rollResult.isCriticalFailure) {
+    const randomGif = CRITICAL_FAILURE_GIFS[Math.floor(Math.random() * CRITICAL_FAILURE_GIFS.length)];
+    embed.setImage(randomGif);
+  }
 
   return embed;
 }

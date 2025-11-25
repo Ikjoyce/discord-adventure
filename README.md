@@ -75,14 +75,14 @@ A Discord bot acting as a DnD Dungeon Master using Node.js, TypeScript, discord.
 
 1.  Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2.  Select your application.
-3.  Go to **OAuth2** -> **URL Generator**.
-4.  Under **Scopes**, check: `bot` and `applications.commands`.
-5.  Under **Bot Permissions**, check:
+3.  **Important:** Go to **Bot** tab and scroll down to **Privileged Gateway Intents**. Enable **Message Content Intent**. (Required for the bot to function correctly).
+4.  Go to **OAuth2** -> **URL Generator**.
+5.  Under **Scopes**, check: `bot` and `applications.commands`.
+6.  Under **Bot Permissions**, check:
     -   `Send Messages`
     -   `Embed Links`
-    -   `Attach Files`
-    -   `Use External Emojis` (optional but good for custom UI)
-6.  Copy the generated URL at the bottom and paste it into your browser to invite the bot to your server.
+    -   `View Channels`
+7.  Copy the generated URL at the bottom and paste it into your browser to invite the bot to your server.
 
 ## Deployment (Railway)
 
