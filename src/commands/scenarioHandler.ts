@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, ActionRow, MessageActionRowComponent } from 'discord.js';
 import { generateScenario } from '../services/gemini';
 import { createScenario, getScenario, endScenario, addScenarioMessage } from '../state/scenarioManager';
 
@@ -123,7 +123,7 @@ async function handleEndScenario(interaction: ChatInputCommandInteraction, chann
                 if (message) {
                     const disabledRows = message.components.map(row => {
                         const newRow = new ActionRowBuilder<ButtonBuilder>();
-                        row.components.forEach(component => {
+                        (row as ActionRow<MessageActionRowComponent>).components.forEach(component => {
                             if (component.type === ComponentType.Button) {
                                 const button = ButtonBuilder.from(component);
                                 button.setDisabled(true);
