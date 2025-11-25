@@ -21,12 +21,13 @@ interface NarrativeContext {
   statUsed: string;
   difficultyClass?: number; // Optional DC
   history?: string[]; // Previous context
+  scenarioContext?: string; // Active scenario description
 }
 
 export async function generateNarrative(context: NarrativeContext): Promise<string> {
   if (!model) initGemini();
 
-  const { player, action, roll, statUsed, difficultyClass } = context;
+  const { player, action, roll, statUsed, difficultyClass, scenarioContext } = context;
   
   // Determine success/failure if DC is provided, otherwise leave it open-ended or based on standard tiers
   let outcomeHint = '';
@@ -48,8 +49,13 @@ export async function generateNarrative(context: NarrativeContext): Promise<stri
     ? `\nRecent Session History:\n${context.history.join('\n')}\n` 
     : '';
 
+  const scenarioText = scenarioContext 
+    ? `\nCurrent Scenario/Scene:\n${scenarioContext}\n`
+    : '';
+
   const prompt = `
     You are the Dungeon Master for a Dungeons & Dragons 5e game.
+    ${scenarioText}
     ${historyText}
     Player: ${player.characterName}
     Stats: STR:${player.stats.str} DEX:${player.stats.dex} CON:${player.stats.con} INT:${player.stats.int} WIS:${player.stats.wis} CHA:${player.stats.cha}
@@ -98,4 +104,33 @@ export async function generateChatResponse(history: string[], newMessage: string
         console.error('Gemini Chat Error:', error);
         return "I cannot speak right now. (AI Error)";
     }
+}
+
+export async function generateScenario(theme: string): Promise<{ description: string, suggestedActions: string[] }> {
+  if (!model) initGemini();
+
+  const prompt = `
+    You are a Dungeon Master. Create a short, engaging scenario for a D&D 5e encounter or scene.
+    Theme: ${theme}
+    
+    Output strictly in JSON format with this structure:
+    {
+      "description": "A vivid description of the scene (2-3 sentences)",
+      "suggestedActions": ["Action 1", "Action 2", "Action 3"]
+    }
+    Do not include markdown formatting like \`\`\`json. Just the raw JSON string.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Gemini Scenario Error:', error);
+    return {
+      description: "You find yourself in a mysterious void. The AI failed to generate the world.",
+      suggestedActions: ["Look around", "Wait"]
+    };
+  }
 }

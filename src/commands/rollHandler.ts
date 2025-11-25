@@ -6,6 +6,7 @@ import { checkRateLimit } from '../utils/rateLimiter';
 import { getPlayer, updatePlayerStats } from '../data/playerManager';
 import { generateNarrative } from '../services/gemini';
 import { addToHistory, getHistory } from '../state/sessionManager';
+import { getScenario } from '../state/scenarioManager';
 
 export async function handleRollCommand(interaction: ChatInputCommandInteraction) {
   const userId = interaction.user.id;
@@ -89,6 +90,7 @@ export async function handleRollCommand(interaction: ChatInputCommandInteraction
 
   // 6. Generate AI Narrative
   const history = channelId ? getHistory(channelId) : [];
+  const scenario = channelId ? getScenario(channelId) : undefined;
   
   const narrative = await generateNarrative({
     player,
@@ -96,7 +98,8 @@ export async function handleRollCommand(interaction: ChatInputCommandInteraction
     roll: rollResult,
     statUsed: statKey.toUpperCase(),
     difficultyClass: dc,
-    history
+    history,
+    scenarioContext: scenario ? scenario.description : undefined
   });
 
   // 7. Send Result

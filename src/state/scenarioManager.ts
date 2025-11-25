@@ -1,0 +1,54 @@
+export interface Scenario {
+  channelId: string;
+  description: string;
+  suggestedActions: string[];
+  createdAt: number;
+  active: boolean;
+}
+
+const activeScenarios: Map<string, Scenario> = new Map();
+const SCENARIO_TIMEOUT = 60 * 60 * 1000; // 1 hour
+
+export function createScenario(channelId: string, description: string, suggestedActions: string[]): Scenario {
+  const scenario: Scenario = {
+    channelId,
+    description,
+    suggestedActions,
+    createdAt: Date.now(),
+    active: true
+  };
+  
+  activeScenarios.set(channelId, scenario);
+  return scenario;
+}
+
+export function getScenario(channelId: string): Scenario | undefined {
+  const scenario = activeScenarios.get(channelId);
+  
+  if (scenario && Date.now() - scenario.createdAt > SCENARIO_TIMEOUT) {
+    // Scenario expired
+    activeScenarios.delete(channelId);
+    return undefined;
+  }
+  
+  return scenario;
+}
+
+export function endScenario(channelId: string): boolean {
+  return activeScenarios.delete(channelId);
+}
+
+export function hasActiveScenario(channelId: string): boolean {
+  const scenario = getScenario(channelId);
+  return scenario !== undefined && scenario.active;
+}
+
+// Cleanup interval
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, scenario] of activeScenarios.entries()) {
+    if (now - scenario.createdAt > SCENARIO_TIMEOUT) {
+      activeScenarios.delete(id);
+    }
+  }
+}, SCENARIO_TIMEOUT);

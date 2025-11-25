@@ -90,7 +90,30 @@ const commands = [
             .addChoices(
               { name: 'Trigger', value: 'trigger' },
               { name: 'List', value: 'list' }
-            )))
+            ))),
+
+  new SlashCommandBuilder()
+    .setName('scenario')
+    .setDescription('Adventure scenario commands')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('start')
+        .setDescription('Start a new adventure scenario')
+        .addStringOption(option =>
+          option.setName('theme')
+            .setDescription('Optional theme for the scenario (e.g., "dungeon", "tavern", "wilderness")')
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('view')
+        .setDescription('View the current active scenario')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('end')
+        .setDescription('End the current scenario')
+    )
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);

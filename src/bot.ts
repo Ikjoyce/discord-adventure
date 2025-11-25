@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Events, Interaction, REST, Routes, SlashComm
 import dotenv from 'dotenv';
 import { handleRollCommand, handleStatsCommand, handleSetStatCommand } from './commands/rollHandler';
 import { handleAdminCommand } from './commands/adminHandler';
+import { handleScenarioCommand } from './commands/scenarioHandler';
 import { loadPlayers } from './data/playerManager';
 import { initGemini } from './services/gemini';
 
@@ -104,7 +105,30 @@ async function registerCommands() {
               .addChoices(
                 { name: 'Trigger', value: 'trigger' },
                 { name: 'List', value: 'list' }
-              )))
+              ))),
+
+    new SlashCommandBuilder()
+      .setName('scenario')
+      .setDescription('Adventure scenario commands')
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('start')
+          .setDescription('Start a new adventure scenario')
+          .addStringOption(option =>
+            option.setName('theme')
+              .setDescription('Optional theme for the scenario (e.g., "dungeon", "tavern", "wilderness")')
+          )
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('view')
+          .setDescription('View the current active scenario')
+      )
+      .addSubcommand(subcommand =>
+        subcommand
+          .setName('end')
+          .setDescription('End the current scenario')
+      )
   ].map(command => command.toJSON());
 
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);
@@ -160,6 +184,10 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
 
       case 'admin':
         await handleAdminCommand(interaction);
+        break;
+
+      case 'scenario':
+        await handleScenarioCommand(interaction);
         break;
     }
   } catch (error) {
