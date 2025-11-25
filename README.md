@@ -4,10 +4,13 @@ A Discord bot acting as a DnD Dungeon Master using Node.js, TypeScript, discord.
 
 ## Features
 
-- **Dice Rolling**: `d20` rolls with automatic stat modifiers.
-- **AI Narrator**: Gemini 2.0 Flash Lite generates immersive outcomes based on your rolls.
+- **Dice Rolling**: `d20` rolls with automatic stat modifiers and advantage/disadvantage.
+- **AI Narrator**: Gemini 2.5 Flash Lite generates immersive outcomes based on your rolls.
 - **Character Stats**: Persistent stats (STR, DEX, CON, INT, WIS, CHA) for each user.
-- **Auto-Detection**: The bot infers which stat to use based on your action description.
+- **Smart Stat Detection**: The bot automatically infers which stat to use based on your action description.
+- **Interactive Scenarios**: DM-generated adventure scenarios that players can respond to with rolls.
+- **Critical Roll Celebrations**: Automatic GIFs and special emojis for natural 20s and 1s.
+- **Session History**: The AI remembers recent actions to create a cohesive narrative.
 - **Admin Controls**: Manage rate limits and backups.
 - **Rate Limiting**: Prevents spam (5 actions/minute).
 
@@ -48,11 +51,17 @@ A Discord bot acting as a DnD Dungeon Master using Node.js, TypeScript, discord.
 ## Commands
 
 ### Player Commands
-- `/roll [action] [stat?] [dc?] [advantage?]` - Attempt an action.
+- `/roll [action] [stat?] [dc?] [advantage?] [disadvantage?]` - Attempt an action with a d20 roll.
   - Example: `/roll action:"I swing my sword at the goblin"`
   - Example: `/roll action:"I sneak past the guard" stat:dex advantage:true`
+  - Example: `/roll action:"I climb the wall" dc:15`
 - `/stats` - View your character sheet.
 - `/setstat [stat] [value]` - Update a specific stat (1-30).
+- `/scenario start [theme?]` - Generate a new AI-created adventure scenario.
+  - Example: `/scenario start theme:"haunted mansion"`
+  - Example: `/scenario start` (generates a random scenario)
+- `/scenario view` - View the current active scenario in the channel.
+- `/scenario end` - End the current scenario.
 
 ### Admin Commands
 - `/admin ratelimit view [user]` - Check a user's rate limit status.
@@ -102,6 +111,26 @@ This project is ready for Railway.app.
 2.  Go to the **Variables** tab.
 3.  Add all 4 environment variables listed above.
 4.  Railway will automatically build and start the bot using the `Procfile`.
+
+## How to Play
+
+### Basic Gameplay
+1. Use `/roll action:"description"` to attempt any action
+2. The bot detects which stat applies (STR, DEX, CON, INT, WIS, CHA) or you can specify manually
+3. View your character stats with `/stats` and adjust them with `/setstat`
+
+### Scenario Mode
+1. Start a scenario: `/scenario start theme:"dungeon exploration"`
+2. The AI generates a scene with suggested actions
+3. Players use `/roll` commands to respond - the AI remembers the scenario context
+4. Use `/scenario view` anytime to see the current scene
+5. End with `/scenario end` when done
+
+### Special Features
+- **Critical Success (Natural 20)**: Automatic celebration GIF + :partywizard: emoji
+- **Critical Failure (Natural 1)**: Automatic failure GIF
+- **Advantage/Disadvantage**: Roll twice, take higher/lower
+- **Session Memory**: The AI remembers recent rolls in each channel for continuity
 
 ## License
 

@@ -1,11 +1,12 @@
-import { Client, GatewayIntentBits, Events, Interaction, REST, Routes, SlashCommandBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Events, Interaction, REST, Routes, SlashCommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
 import dotenv from 'dotenv';
 import http from 'http';
-import { handleRollCommand, handleStatsCommand, handleSetStatCommand } from './commands/rollHandler';
+import { handleRollCommand, handleStatsCommand, handleSetStatCommand, executeRoll } from './commands/rollHandler';
 import { handleAdminCommand } from './commands/adminHandler';
 import { handleScenarioCommand } from './commands/scenarioHandler';
 import { loadPlayers } from './data/playerManager';
 import { initGemini } from './services/gemini';
+import { getScenario } from './state/scenarioManager';
 
 dotenv.config();
 
@@ -165,38 +166,96 @@ client.once(Events.ClientReady, async c => {
 });
 
 client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = interaction.commandName;
-
   try {
-    switch (command) {
-      case 'roll':
-        await handleRollCommand(interaction);
-        break;
-        
-      case 'stats':
-        await handleStatsCommand(interaction);
-        break;
-        
-      case 'setstat':
-        await handleSetStatCommand(interaction);
-        break;
+    if (interaction.isChatInputCommand()) {
+      const command = interaction.commandName;
+      switch (command) {
+        case 'roll':
+          await handleRollCommand(interaction);
+          break;
+        case 'stats':
+          await handleStatsCommand(interaction);
+          break;
+        case 'setstat':
+          await handleSetStatCommand(interaction);
+          break;
+        case 'admin':
+          await handleAdminCommand(interaction);
+          break;
+        case 'scenario':
+          await handleScenarioCommand(interaction);
+          break;
+      }
+    } else if (interaction.isButton()) {
+      const customId = interaction.customId;
+      
+      // Handle Scenario Action Buttons
+      if (customId.startsWith('scenario_')) {
+        const channelId = interaction.channelId;
+        if (!channelId) return;
 
-      case 'admin':
-        await handleAdminCommand(interaction);
-        break;
+        // Check if scenario is active
+        const scenario = getScenario(channelId);
+        if (!scenario) {
+          await interaction.reply({ content: "This scenario has ended or expired.", ephemeral: true });
+          return;
+        }
 
-      case 'scenario':
-        await handleScenarioCommand(interaction);
-        break;
+        // Handle Custom Action Button
+        if (customId.startsWith('scenario_custom_')) {
+          const modal = new ModalBuilder()
+            .setCustomId(`scenario_custom_modal_${channelId}`)
+            .setTitle('Custom Action');
+
+          const actionInput = new TextInputBuilder()
+            .setCustomId('action_text')
+            .setLabel("What do you want to do?")
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true)
+            .setMaxLength(100);
+
+          const firstActionRow = new ActionRowBuilder<TextInputBuilder>().addComponents(actionInput);
+          modal.addComponents(firstActionRow);
+
+          await interaction.showModal(modal);
+          return;
+        }
+
+        // Handle Suggested Action Buttons
+        const parts = customId.split('_');
+        // Format: scenario_{channelId}_{index}
+        const index = parseInt(parts[2]);
+        
+        if (!isNaN(index) && index >= 0 && index < scenario.suggestedActions.length) {
+          const actionText = scenario.suggestedActions[index];
+          await interaction.deferReply();
+          await executeRoll(interaction, actionText);
+        }
+      }
+    } else if (interaction.isModalSubmit()) {
+      if (interaction.customId.startsWith('scenario_custom_modal_')) {
+        const channelId = interaction.channelId;
+        if (!channelId) return;
+
+        const scenario = getScenario(channelId);
+        if (!scenario) {
+          await interaction.reply({ content: "This scenario has ended or expired.", ephemeral: true });
+          return;
+        }
+
+        const actionText = interaction.fields.getTextInputValue('action_text');
+        await interaction.deferReply();
+        await executeRoll(interaction, actionText);
+      }
     }
   } catch (error) {
-    console.error('Command execution error:', error);
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-    } else {
-      await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+    console.error('Interaction error:', error);
+    if (interaction.isRepliable() && !interaction.replied) {
+       if (interaction.deferred) {
+         await interaction.followUp({ content: 'There was an error while executing this interaction!', ephemeral: true });
+       } else {
+         await interaction.reply({ content: 'There was an error while executing this interaction!', ephemeral: true });
+       }
     }
   }
 });

@@ -1,6 +1,6 @@
-import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { generateScenario } from '../services/gemini';
-import { createScenario, getScenario, endScenario } from '../state/scenarioManager';
+import { createScenario, getScenario, endScenario, addScenarioMessage } from '../state/scenarioManager';
 
 export async function handleScenarioCommand(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand();
@@ -24,6 +24,39 @@ export async function handleScenarioCommand(interaction: ChatInputCommandInterac
   }
 }
 
+function createScenarioButtons(channelId: string, actions: string[]): ActionRowBuilder<ButtonBuilder>[] {
+  const rows: ActionRowBuilder<ButtonBuilder>[] = [];
+  let currentRow = new ActionRowBuilder<ButtonBuilder>();
+
+  actions.forEach((action, index) => {
+    if (currentRow.components.length >= 5) {
+      rows.push(currentRow);
+      currentRow = new ActionRowBuilder<ButtonBuilder>();
+    }
+    currentRow.addComponents(
+      new ButtonBuilder()
+        .setCustomId(`scenario_${channelId}_${index}`)
+        .setLabel(action.length > 80 ? action.substring(0, 77) + '...' : action)
+        .setStyle(ButtonStyle.Secondary)
+    );
+  });
+
+  // Add Custom Action button
+  if (currentRow.components.length >= 5) {
+    rows.push(currentRow);
+    currentRow = new ActionRowBuilder<ButtonBuilder>();
+  }
+  currentRow.addComponents(
+    new ButtonBuilder()
+      .setCustomId(`scenario_custom_${channelId}`)
+      .setLabel('Custom Action')
+      .setStyle(ButtonStyle.Primary)
+  );
+  
+  rows.push(currentRow);
+  return rows;
+}
+
 async function handleStartScenario(interaction: ChatInputCommandInteraction, channelId: string) {
   await interaction.deferReply();
   
@@ -41,9 +74,12 @@ async function handleStartScenario(interaction: ChatInputCommandInteraction, cha
         name: 'Suggested Actions', 
         value: scenario.suggestedActions.map(action => `• ${action}`).join('\n') 
       })
-      .setFooter({ text: 'Use /roll to take action!' });
+      .setFooter({ text: 'Use /roll or click a button to take action!' });
 
-    await interaction.editReply({ embeds: [embed] });
+    const components = createScenarioButtons(channelId, scenario.suggestedActions);
+    const message = await interaction.editReply({ embeds: [embed], components });
+    addScenarioMessage(channelId, message.id);
+
   } catch (error) {
     console.error('Error starting scenario:', error);
     await interaction.editReply("Failed to generate a scenario. The AI might be busy.");
@@ -67,12 +103,49 @@ async function handleViewScenario(interaction: ChatInputCommandInteraction, chan
       value: scenario.suggestedActions.map(action => `• ${action}`).join('\n') 
     });
 
-  await interaction.reply({ embeds: [embed] });
+  const components = createScenarioButtons(channelId, scenario.suggestedActions);
+  const message = await interaction.reply({ embeds: [embed], components, fetchReply: true });
+  addScenarioMessage(channelId, message.id);
 }
 
 async function handleEndScenario(interaction: ChatInputCommandInteraction, channelId: string) {
-  if (endScenario(channelId)) {
-    await interaction.reply("Scenario ended. The adventure is paused.");
+  const scenario = getScenario(channelId);
+  
+  if (scenario) {
+    // Disable buttons on all tracked messages
+    const channel = interaction.channel;
+    const failedMessages: string[] = [];
+
+    if (channel && channel.isTextBased()) {
+        for (const messageId of scenario.messageIds) {
+            try {
+                const message = await channel.messages.fetch(messageId);
+                if (message) {
+                    const disabledRows = message.components.map(row => {
+                        const newRow = ActionRowBuilder.from(row);
+                        newRow.components.forEach((component: any) => {
+                             component.setDisabled(true);
+                        });
+                        return newRow;
+                    });
+                    // @ts-ignore
+                    await message.edit({ components: disabledRows });
+                }
+            } catch (e) {
+                console.log(`Failed to disable buttons for message ${messageId}:`, e);
+                failedMessages.push(messageId);
+            }
+        }
+    }
+
+    endScenario(channelId);
+    
+    let replyContent = "Scenario ended. The adventure is paused.";
+    if (failedMessages.length > 0) {
+        replyContent += ` (Note: Could not disable buttons on ${failedMessages.length} message(s). They might have been deleted.)`;
+    }
+    
+    await interaction.reply(replyContent);
   } else {
     await interaction.reply({ content: "No active scenario to end.", ephemeral: true });
   }

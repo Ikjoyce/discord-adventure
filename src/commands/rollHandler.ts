@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+import { ChatInputCommandInteraction, ButtonInteraction, ModalSubmitInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { rollDice, RollResult } from '../utils/dice';
 import { detectStat } from '../utils/statDetector';
 import { createRollEmbed } from '../utils/embedBuilder';
@@ -8,7 +8,18 @@ import { generateNarrative } from '../services/gemini';
 import { addToHistory, getHistory } from '../state/sessionManager';
 import { getScenario } from '../state/scenarioManager';
 
-export async function handleRollCommand(interaction: ChatInputCommandInteraction) {
+export interface RollOptions {
+  manualStat?: string | null;
+  manualDC?: number | null;
+  advantage?: boolean;
+  disadvantage?: boolean;
+}
+
+export async function executeRoll(
+  interaction: ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction,
+  actionDescription: string,
+  options: RollOptions = {}
+) {
   const userId = interaction.user.id;
   const channelId = interaction.channelId;
   const username = interaction.user.username;
@@ -16,18 +27,11 @@ export async function handleRollCommand(interaction: ChatInputCommandInteraction
 
   // 1. Rate Limit Check
   if (!checkRateLimit(userId)) {
-    await interaction.reply({ content: "You are doing that too much! Take a breath (Rate limit exceeded).", ephemeral: true });
+    await interaction.editReply({ content: "You are doing that too much! Take a breath (Rate limit exceeded)." });
     return;
   }
 
-  await interaction.deferReply();
-
-  // 2. Parse Input
-  const actionDescription = interaction.options.getString('action', true);
-  const manualStat = interaction.options.getString('stat');
-  const manualDC = interaction.options.getInteger('dc');
-  const advantage = interaction.options.getBoolean('advantage') || false;
-  const disadvantage = interaction.options.getBoolean('disadvantage') || false;
+  const { manualStat, manualDC, advantage = false, disadvantage = false } = options;
 
   if (advantage && disadvantage) {
       await interaction.editReply("You cannot have both advantage and disadvantage!");
@@ -121,6 +125,32 @@ export async function handleRollCommand(interaction: ChatInputCommandInteraction
   if (channelId) {
       addToHistory(channelId, `Player ${username} attempted: "${actionDescription}". Rolled ${rollResult.total} (${statKey}). Result: ${narrative}`);
   }
+}
+
+export async function handleRollCommand(interaction: ChatInputCommandInteraction) {
+  const userId = interaction.user.id;
+
+  // 1. Rate Limit Check
+  if (!checkRateLimit(userId)) {
+    await interaction.reply({ content: "You are doing that too much! Take a breath (Rate limit exceeded).", ephemeral: true });
+    return;
+  }
+
+  await interaction.deferReply();
+
+  // 2. Parse Input
+  const actionDescription = interaction.options.getString('action', true);
+  const manualStat = interaction.options.getString('stat');
+  const manualDC = interaction.options.getInteger('dc');
+  const advantage = interaction.options.getBoolean('advantage') || false;
+  const disadvantage = interaction.options.getBoolean('disadvantage') || false;
+
+  await executeRoll(interaction, actionDescription, {
+    manualStat,
+    manualDC,
+    advantage,
+    disadvantage
+  });
 }
 
 export async function handleStatsCommand(interaction: ChatInputCommandInteraction) {

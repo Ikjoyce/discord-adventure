@@ -4,6 +4,7 @@ export interface Scenario {
   suggestedActions: string[];
   createdAt: number;
   active: boolean;
+  messageIds: string[];
 }
 
 const activeScenarios: Map<string, Scenario> = new Map();
@@ -15,11 +16,19 @@ export function createScenario(channelId: string, description: string, suggested
     description,
     suggestedActions,
     createdAt: Date.now(),
-    active: true
+    active: true,
+    messageIds: []
   };
   
   activeScenarios.set(channelId, scenario);
   return scenario;
+}
+
+export function addScenarioMessage(channelId: string, messageId: string): void {
+  const scenario = activeScenarios.get(channelId);
+  if (scenario) {
+    scenario.messageIds.push(messageId);
+  }
 }
 
 export function getScenario(channelId: string): Scenario | undefined {
