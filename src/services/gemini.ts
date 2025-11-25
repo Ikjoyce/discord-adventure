@@ -42,7 +42,7 @@ export async function generateNarrative(context: NarrativeContext): Promise<stri
     else outcomeHint = 'CRITICAL SUCCESS / AMAZING OUTCOME';
   }
 
-  if (roll.isCriticalSuccess) outcomeHint = 'CRITICAL SUCCESS! THE BEST POSSIBLE RESULT.';
+  if (roll.isCriticalSuccess) outcomeHint = 'CRITICAL SUCCESS! THE BEST POSSIBLE RESULT. You MUST include the emoji :partywizard: in your response.';
   if (roll.isCriticalFailure) outcomeHint = 'CRITICAL FAILURE! A CATASTROPHIC MISHAP.';
 
   const historyText = context.history && context.history.length > 0 
