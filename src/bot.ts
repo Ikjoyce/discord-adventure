@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Events, Interaction, REST, Routes, SlashCommandBuilder } from 'discord.js';
 import dotenv from 'dotenv';
+import http from 'http';
 import { handleRollCommand, handleStatsCommand, handleSetStatCommand } from './commands/rollHandler';
 import { handleAdminCommand } from './commands/adminHandler';
 import { handleScenarioCommand } from './commands/scenarioHandler';
@@ -198,6 +199,15 @@ client.on(Events.InteractionCreate, async (interaction: Interaction) => {
       await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
     }
   }
+});
+
+// Create a dummy server for Railway/Render health checks
+const port = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Discord Bot is running!');
+}).listen(port, () => {
+  console.log(`Health check server listening on port ${port}`);
 });
 
 client.login(process.env.DISCORD_TOKEN);
