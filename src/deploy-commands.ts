@@ -103,6 +103,14 @@ const commands = [
           option.setName('theme')
             .setDescription('Optional theme for the scenario (e.g., "dungeon", "tavern", "wilderness")')
         )
+        .addStringOption(option =>
+          option.setName('win_condition')
+            .setDescription('Optional win condition for the scenario')
+        )
+        .addStringOption(option =>
+          option.setName('fail_condition')
+            .setDescription('Optional fail condition for the scenario')
+        )
     )
     .addSubcommand(subcommand =>
       subcommand

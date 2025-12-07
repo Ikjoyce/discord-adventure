@@ -103,7 +103,9 @@ export async function executeRoll(
     statUsed: statKey.toUpperCase(),
     difficultyClass: dc,
     history,
-    scenarioContext: scenario ? scenario.description : undefined
+    scenarioContext: scenario ? scenario.description : undefined,
+    winCondition: scenario ? scenario.winCondition : undefined,
+    failCondition: scenario ? scenario.failCondition : undefined
   });
 
   // 7. Send Result

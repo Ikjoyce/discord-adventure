@@ -22,12 +22,14 @@ interface NarrativeContext {
   difficultyClass?: number; // Optional DC
   history?: string[]; // Previous context
   scenarioContext?: string; // Active scenario description
+  winCondition?: string;
+  failCondition?: string;
 }
 
 export async function generateNarrative(context: NarrativeContext): Promise<string> {
   if (!model) initGemini();
 
-  const { player, action, roll, statUsed, difficultyClass, scenarioContext } = context;
+  const { player, action, roll, statUsed, difficultyClass, scenarioContext, winCondition, failCondition } = context;
   
   // Determine success/failure if DC is provided, otherwise leave it open-ended or based on standard tiers
   let outcomeHint = '';
@@ -53,9 +55,14 @@ export async function generateNarrative(context: NarrativeContext): Promise<stri
     ? `\nCurrent Scenario/Scene:\n${scenarioContext}\n`
     : '';
 
+  const conditionsText = (winCondition || failCondition)
+    ? `\nScenario Conditions:\n${winCondition ? `Win Condition: ${winCondition}\n` : ''}${failCondition ? `Fail Condition: ${failCondition}\n` : ''}`
+    : '';
+
   const prompt = `
     You are the Dungeon Master for a Dungeons & Dragons 5e game.
     ${scenarioText}
+    ${conditionsText}
     ${historyText}
     Player: ${player.characterName}
     Stats: STR:${player.stats.str} DEX:${player.stats.dex} CON:${player.stats.con} INT:${player.stats.int} WIS:${player.stats.wis} CHA:${player.stats.cha}
@@ -70,6 +77,7 @@ export async function generateNarrative(context: NarrativeContext): Promise<stri
     If it was a failure, describe how it went wrong. 
     If it was a success, describe the heroic feat.
     Do not include game mechanics numbers in the narrative, just the story.
+    Keep the win/fail conditions in mind as the story progresses.
   `;
 
   try {
@@ -106,12 +114,17 @@ export async function generateChatResponse(history: string[], newMessage: string
     }
 }
 
-export async function generateScenario(theme: string): Promise<{ description: string, suggestedActions: string[] }> {
+export async function generateScenario(theme: string, winCondition?: string, failCondition?: string): Promise<{ description: string, suggestedActions: string[] }> {
   if (!model) initGemini();
+
+  const conditionsText = (winCondition || failCondition)
+    ? `\nScenario Conditions:\n${winCondition ? `Win Condition: ${winCondition}\n` : ''}${failCondition ? `Fail Condition: ${failCondition}\n` : ''}`
+    : '';
 
   const prompt = `
     You are a Dungeon Master. Create a short, engaging scenario for a D&D 5e encounter or scene.
     Theme: ${theme}
+    ${conditionsText}
     
     Output strictly in JSON format with this structure:
     {

@@ -6,12 +6,14 @@ export interface Scenario {
   expiresAt: number;
   active: boolean;
   messageIds: string[];
+  winCondition?: string;
+  failCondition?: string;
 }
 
 const activeScenarios: Map<string, Scenario> = new Map();
 export const SCENARIO_TIMEOUT = 60 * 60 * 1000; // 1 hour
 
-export function createScenario(channelId: string, description: string, suggestedActions: string[]): Scenario {
+export function createScenario(channelId: string, description: string, suggestedActions: string[], winCondition?: string, failCondition?: string): Scenario {
   const now = Date.now();
   const scenario: Scenario = {
     channelId,
@@ -20,7 +22,9 @@ export function createScenario(channelId: string, description: string, suggested
     createdAt: now,
     expiresAt: now + SCENARIO_TIMEOUT,
     active: true,
-    messageIds: []
+    messageIds: [],
+    winCondition,
+    failCondition
   };
   
   activeScenarios.set(channelId, scenario);

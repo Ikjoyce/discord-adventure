@@ -61,10 +61,12 @@ async function handleStartScenario(interaction: ChatInputCommandInteraction, cha
   await interaction.deferReply();
   
   const theme = interaction.options.getString('theme') || 'fantasy adventure';
+  const winCondition = interaction.options.getString('win_condition') || undefined;
+  const failCondition = interaction.options.getString('fail_condition') || undefined;
   
   try {
-    const aiResult = await generateScenario(theme);
-    const scenario = createScenario(channelId, aiResult.description, aiResult.suggestedActions);
+    const aiResult = await generateScenario(theme, winCondition, failCondition);
+    const scenario = createScenario(channelId, aiResult.description, aiResult.suggestedActions, winCondition, failCondition);
     
     const expiresTimestamp = Math.floor(scenario.expiresAt / 1000);
 
@@ -82,8 +84,16 @@ async function handleStartScenario(interaction: ChatInputCommandInteraction, cha
           value: `Ends <t:${expiresTimestamp}:R>`,
           inline: false
         }
-      )
-      .setFooter({ text: 'Use /roll or click a button to take action!' });
+      );
+
+    if (winCondition) {
+      embed.addFields({ name: 'Win Condition', value: winCondition, inline: true });
+    }
+    if (failCondition) {
+      embed.addFields({ name: 'Fail Condition', value: failCondition, inline: true });
+    }
+
+    embed.setFooter({ text: 'Use /roll or click a button to take action!' });
 
     const components = createScenarioButtons(channelId, scenario.suggestedActions);
     const message = await interaction.editReply({ embeds: [embed], components });
@@ -120,6 +130,13 @@ async function handleViewScenario(interaction: ChatInputCommandInteraction, chan
         inline: false
       }
     );
+
+  if (scenario.winCondition) {
+    embed.addFields({ name: 'Win Condition', value: scenario.winCondition, inline: true });
+  }
+  if (scenario.failCondition) {
+    embed.addFields({ name: 'Fail Condition', value: scenario.failCondition, inline: true });
+  }
 
   const components = createScenarioButtons(channelId, scenario.suggestedActions);
   const message = await interaction.reply({ embeds: [embed], components, fetchReply: true });
