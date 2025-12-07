@@ -66,14 +66,23 @@ async function handleStartScenario(interaction: ChatInputCommandInteraction, cha
     const aiResult = await generateScenario(theme);
     const scenario = createScenario(channelId, aiResult.description, aiResult.suggestedActions);
     
+    const expiresTimestamp = Math.floor(scenario.expiresAt / 1000);
+
     const embed = new EmbedBuilder()
       .setColor('#9B59B6')
       .setTitle('🎲 New Scenario Started!')
       .setDescription(scenario.description)
-      .addFields({ 
-        name: 'Suggested Actions', 
-        value: scenario.suggestedActions.map(action => `• ${action}`).join('\n') 
-      })
+      .addFields(
+        { 
+          name: 'Suggested Actions', 
+          value: scenario.suggestedActions.map(action => `• ${action}`).join('\n') 
+        },
+        {
+          name: 'Time Remaining',
+          value: `Ends <t:${expiresTimestamp}:R>`,
+          inline: false
+        }
+      )
       .setFooter({ text: 'Use /roll or click a button to take action!' });
 
     const components = createScenarioButtons(channelId, scenario.suggestedActions);
@@ -94,14 +103,23 @@ async function handleViewScenario(interaction: ChatInputCommandInteraction, chan
     return;
   }
 
+  const expiresTimestamp = Math.floor(scenario.expiresAt / 1000);
+
   const embed = new EmbedBuilder()
     .setColor('#9B59B6')
     .setTitle('📜 Current Scenario')
     .setDescription(scenario.description)
-    .addFields({ 
-      name: 'Suggested Actions', 
-      value: scenario.suggestedActions.map(action => `• ${action}`).join('\n') 
-    });
+    .addFields(
+      { 
+        name: 'Suggested Actions', 
+        value: scenario.suggestedActions.map(action => `• ${action}`).join('\n') 
+      },
+      {
+        name: 'Time Remaining',
+        value: `Ends <t:${expiresTimestamp}:R>`,
+        inline: false
+      }
+    );
 
   const components = createScenarioButtons(channelId, scenario.suggestedActions);
   const message = await interaction.reply({ embeds: [embed], components, fetchReply: true });

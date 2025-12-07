@@ -3,19 +3,22 @@ export interface Scenario {
   description: string;
   suggestedActions: string[];
   createdAt: number;
+  expiresAt: number;
   active: boolean;
   messageIds: string[];
 }
 
 const activeScenarios: Map<string, Scenario> = new Map();
-const SCENARIO_TIMEOUT = 60 * 60 * 1000; // 1 hour
+export const SCENARIO_TIMEOUT = 60 * 60 * 1000; // 1 hour
 
 export function createScenario(channelId: string, description: string, suggestedActions: string[]): Scenario {
+  const now = Date.now();
   const scenario: Scenario = {
     channelId,
     description,
     suggestedActions,
-    createdAt: Date.now(),
+    createdAt: now,
+    expiresAt: now + SCENARIO_TIMEOUT,
     active: true,
     messageIds: []
   };
