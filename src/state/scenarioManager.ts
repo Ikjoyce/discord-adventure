@@ -41,7 +41,7 @@ export function addScenarioMessage(channelId: string, messageId: string): void {
 export function getScenario(channelId: string): Scenario | undefined {
   const scenario = activeScenarios.get(channelId);
   
-  if (scenario && Date.now() - scenario.createdAt > SCENARIO_TIMEOUT) {
+  if (scenario && Date.now() > scenario.expiresAt) {
     // Scenario expired
     activeScenarios.delete(channelId);
     return undefined;
@@ -63,7 +63,7 @@ export function hasActiveScenario(channelId: string): boolean {
 setInterval(() => {
   const now = Date.now();
   for (const [id, scenario] of activeScenarios.entries()) {
-    if (now - scenario.createdAt > SCENARIO_TIMEOUT) {
+    if (now > scenario.expiresAt) {
       activeScenarios.delete(id);
     }
   }

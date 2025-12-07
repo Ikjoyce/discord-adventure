@@ -144,6 +144,7 @@ async function handleViewScenario(interaction: ChatInputCommandInteraction, chan
 }
 
 async function handleEndScenario(interaction: ChatInputCommandInteraction, channelId: string) {
+  await interaction.deferReply();
   const scenario = getScenario(channelId);
   
   if (scenario) {
@@ -183,8 +184,8 @@ async function handleEndScenario(interaction: ChatInputCommandInteraction, chann
         replyContent += ` (Note: Could not disable buttons on ${failedMessages.length} message(s). They might have been deleted.)`;
     }
     
-    await interaction.reply(replyContent);
+    await interaction.editReply(replyContent);
   } else {
-    await interaction.reply({ content: "No active scenario to end.", ephemeral: true });
+    await interaction.editReply("No active scenario to end.");
   }
 }
